@@ -1,67 +1,75 @@
-#include<stdio.h>
-#include<stdlib.h>
- 
-int mutex=1,full=0,empty=3,x=0;
- 
-int main()
-{
-    int n;
-    void producer();
-    void consumer();
-    int wait(int);
-    int signal(int);
-    printf("\n1.Producer\n2.Consumer\n3.Exit");
-    while(1)
-    {
-        printf("\nEnter your choice:");
-        scanf("%d",&n);
-        switch(n)
-        {
-            case 1:    if((mutex==1)&&(empty!=0))
-                        producer();
-                    else
-                        printf("Buffer is full!!");
-                    break;
-            case 2:    if((mutex==1)&&(full!=0))
-                        consumer();
-                    else
-                        printf("Buffer is empty!!");
-                    break;
-            case 3:
-                    exit(0);
-                    break;
+#include <stdio.h>
+
+struct Process {
+    int id;
+    int arrival_time;
+    int burst_time;
+    int remaining_time;
+};
+
+void swap(struct Process *a, struct Process *b) {
+    struct Process temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void sort_by_arrival_time(struct Process processes[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (processes[j].arrival_time > processes[j + 1].arrival_time) {
+                swap(&processes[j], &processes[j + 1]);
+            }
         }
     }
-   
+}
+
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    struct Process processes[n];
+    for (int i = 0; i < n; i++) {
+        processes[i].id = i + 1;
+        printf("Enter arrival time and burst time for process %d: ", i + 1);
+        scanf("%d %d", &processes[i].arrival_time, &processes[i].burst_time);
+        processes[i].remaining_time = processes[i].burst_time;
+    }
+
+    sort_by_arrival_time(processes, n);
+
+    int current_time = 0;
+    int completed = 0;
+    int min_index;
+
+    printf("\nGantt Chart:\n");
+
+    while (completed != n) {
+        min_index = -1;
+        int min_remaining_time = 9999;
+
+        for (int i = 0; i < n; i++) {
+            if (processes[i].arrival_time <= current_time && processes[i].remaining_time < min_remaining_time && processes[i].remaining_time > 0) {
+                min_remaining_time = processes[i].remaining_time;
+                min_index = i;
+            }
+        }
+
+        if (min_index == -1) {
+            current_time++;
+        } else {
+            printf("%d ", current_time);
+            processes[min_index].remaining_time--;
+            current_time++;
+
+            if (processes[min_index].remaining_time == 0) {
+                completed++;
+                printf("P%d ", processes[min_index].id);
+            }
+        }
+    }
+
+    printf("%d\n", current_time);
+
     return 0;
-}
- 
-int wait(int s)
-{
-    return (--s);
-}
- 
-int signal(int s)
-{
-    return(++s);
-}
- 
-void producer()
-{
-    mutex=wait(mutex);
-    full=signal(full);
-    empty=wait(empty);
-    x++;
-    printf("\nProducer produces the item %d",x);
-    mutex=signal(mutex);
-}
- 
-void consumer()
-{
-    mutex=wait(mutex);
-    full=wait(full);
-    empty=signal(empty);
-    printf("\nConsumer consumes item %d",x);
-    x--;
-    mutex=signal(mutex);
 }
